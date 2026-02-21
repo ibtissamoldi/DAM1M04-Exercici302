@@ -94,8 +94,33 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.get('/movies', (req, res) => {
-  res.render('movies', common);
+app.get('/movies', async (req, res) => {
+  try {
+    const [films] = await pool.query(`
+      SELECT 
+        f.film_id,
+        f.title,
+        f.release_year,
+        f.rating,
+        f.description,
+        GROUP_CONCAT(CONCAT(a.first_name, ' ', a.last_name) SEPARATOR ', ') AS actors
+      FROM film f
+      JOIN film_actor fa ON f.film_id = fa.film_id
+      JOIN actor a ON fa.actor_id = a.actor_id
+      GROUP BY f.film_id
+      ORDER BY f.film_id
+      LIMIT 15
+    `);
+
+    res.render('movies', {
+      ...common,
+      films
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.send('Error base de dades');
+  }
 });
 
 app.get('/customers', (req, res) => {
