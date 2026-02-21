@@ -3,6 +3,21 @@
 
 <main>
   <h2>Clients</h2>
+
+  <div class="customersgrid">
+    {{#each clients}}
+      <div class="card">
+        <h3>{{first_name}} {{last_name}}</h3>
+        <p><b>Email:</b> {{email}}</p>
+        <p><b>Primers 5 lloguers:</b></p>
+        <ul>
+          {{#each rentals}}
+            <li>{{title}} ({{rental_date}})</li>
+          {{/each}}
+        </ul>
+      </div>
+    {{/each}}
+  </div>
 </main>
 
 {{> footer}}

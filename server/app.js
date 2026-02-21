@@ -123,8 +123,38 @@ app.get('/movies', async (req, res) => {
   }
 });
 
-app.get('/customers', (req, res) => {
-  res.render('customers', common);
+app.get('/customers', async (req, res) => {
+  try {
+    const [clients] = await pool.query(`
+      SELECT customer_id, first_name, last_name, email
+      FROM customer
+      ORDER BY customer_id
+      LIMIT 25
+    `);
+
+    for (let client of clients) {
+      const [rentals] = await pool.query(`
+        SELECT f.title, r.rental_date
+        FROM rental r
+        JOIN inventory i ON r.inventory_id = i.inventory_id
+        JOIN film f ON i.film_id = f.film_id
+        WHERE r.customer_id = ?
+        ORDER BY r.rental_date
+        LIMIT 5
+      `, [client.customer_id]);
+
+      client.rentals = rentals;
+    }
+
+    res.render('customers', {
+      ...common,
+      clients
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.send('Error base de dades');
+  }
 });
 
 // servidor

@@ -3,6 +3,17 @@
 
 <main>
   <h2>Pellícules</h2>
+
+  <div class="grid">
+    {{#each films}}
+      <div class="card">
+        <h3>{{title}}</h3>
+        <p><b>Any:</b> {{release_year}}</p>
+        <p><b>Rating:</b> {{rating}}</p>
+        <p><b>Actors:</b> {{actors}}</p>
+      </div>
+    {{/each}}
+  </div>
 </main>
 
 {{> footer}}
