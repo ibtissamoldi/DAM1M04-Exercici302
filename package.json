@@ -1,0 +1,28 @@
+{
+  "name": "dam1m04-exercici302",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev" : "nodemon server/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ibtissamoldi/DAM1M04-Exercici302.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ibtissamoldi/DAM1M04-Exercici302/issues"
+  },
+  "homepage": "https://github.com/ibtissamoldi/DAM1M04-Exercici302#readme",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-handlebars": "^8.0.6",
+    "mysql2": "^3.17.4",
+    "nodemon": "^3.1.14"
+  }
+}
