@@ -1,26 +1,24 @@
-{{> header}}
-{{> menu}}
 
-<main>
-  <h2>Pel·lícules</h2>
+{{> header }}
+{{> menu }}
 
-  <div class="grid">
-    {{#each movies}}
-      <div class="card">
-        <h3>{{title}}</h3>
-        <p><b>Any:</b> {{release_year}}</p>
-        <p><b>Actors:</b> {{actors}}</p>
-      </div>
-    {{/each}}
-  </div>
+<h1>Pàgina Principal</h1>
 
-  <h2>Categories</h2>
+<h2>Movies (Primeres 5)</h2>
+<ul>
+  {{#each movies}}
+    <li>
+      <strong>{{title}}</strong> ({{release_year}})<br>
+      Actors: {{actors}}
+    </li>
+  {{/each}}
+</ul>
 
-  <ul>
-    {{#each categories}}
-      <li>{{name}}</li>
-    {{/each}}
-  </ul>
-</main>
+<h2>Categories (Primeres 5)</h2>
+<ul>
+  {{#each categories}}
+    <li>{{name}}</li>
+  {{/each}}
+</ul>
 
-{{> footer}}
+{{> footer }}
