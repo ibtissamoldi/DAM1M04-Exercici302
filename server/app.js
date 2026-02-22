@@ -1,12 +1,19 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const dotenv = require('dotenv');
 const express = require('express');
 const exphbs = require('express-handlebars');
-const path = require('path');
-const fs = require('fs');
 const MySQL = require('./utilsMySQL');
 
+// cargar proxmox config.env
+let proxmoxEnvPath = path.join(__dirname, '../proxmox/config.env');
+if (fs.existsSync(proxmoxEnvPath)) {
+  dotenv.config({ path: proxmoxEnvPath });
+}
+
 const app = express();
-const PORT = 3000;
+const PORT = process.env.DEFAULT_SERVER_PORT || 3000;
 
 // Llegir dades comunes (common.json)
 const common = JSON.parse(
@@ -18,24 +25,13 @@ const isProxmox = !!process.env.PM2_HOME;
 
 // Connexió MySQL
 const db = new MySQL();
-
-if (!isProxmox) {
-  db.init({
-    host: '127.0.0.1',
-    port: 3306,
-    user: 'root',
-    password: 'root',
-    database: 'sakila'
-  });
-} else {
-  db.init({
-    host: '127.0.0.1',
-    port: 3306,
-    user: 'super',
-    password: '1234',
-    database: 'sakila'
-  });
-}
+db.init({
+  host: process.env.DB_HOST || '127.0.0.1',
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASS || 'root',
+  database: process.env.DB_NAME || 'sakila'
+});
 
 // Handlebars
 app.engine('hbs', exphbs.engine({
@@ -43,7 +39,6 @@ app.engine('hbs', exphbs.engine({
   defaultLayout: false,
   partialsDir: path.join(__dirname, 'views/partials')
 }));
-
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -53,7 +48,6 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Ruta principal
 app.get('/', async (req, res) => {
   try {
-
     const moviesRows = await db.query(`
       SELECT 
         f.film_id,
@@ -87,13 +81,11 @@ app.get('/', async (req, res) => {
       name: 'string'
     });
 
-    const data = {
+    res.render('index', {
       ...common,
       movies,
       categories
-    };
-
-    res.render('index', data);
+    });
 
   } catch (err) {
     console.error(err);
@@ -105,7 +97,6 @@ app.get('/', async (req, res) => {
 
 app.get('/movies', async (req, res) => {
   try {
-
     const filmsRows = await db.query(`
       SELECT 
         f.film_id,
