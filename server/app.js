@@ -3,7 +3,7 @@ const express = require('express');
 const exphbs = require('express-handlebars');
 const path = require('path');
 const fs = require('fs');
-const mysql = require('mysql2/promise');
+const MySQL = require('./utilsMySQL');
 
 const app = express();
 const PORT = 3000;
@@ -13,33 +13,29 @@ const common = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'data/common.json'))
 );
 
-// Detectar si estem a Proxmox
-const isProxmox = process.env.PROXMOX === 'true';
+// Detectar Proxmox
+const isProxmox = !!process.env.PM2_HOME;
 
 // Connexió MySQL
-let pool;
+const db = new MySQL();
 
-async function initDB() {
-  if (!isProxmox) {
-    pool = mysql.createPool({
-      host: '127.0.0.1',
-      port: 3306,
-      user: 'root',
-      password: 'root',
-      database: 'sakila'
-    });
-  } else {
-    pool = mysql.createPool({
-      host: '127.0.0.1',
-      port: 3306,
-      user: 'super',
-      password: '1234',
-      database: 'sakila'
-    });
-  }
+if (!isProxmox) {
+  db.init({
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'root',
+    password: 'root',
+    database: 'sakila'
+  });
+} else {
+  db.init({
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'super',
+    password: '1234',
+    database: 'sakila'
+  });
 }
-
-initDB();
 
 // Handlebars
 app.engine('hbs', exphbs.engine({
@@ -54,13 +50,11 @@ app.set('views', path.join(__dirname, 'views'));
 // Fitx estatics
 app.use(express.static(path.join(__dirname, '../public')));
 
-// RUTES:
-
 // Ruta principal
 app.get('/', async (req, res) => {
   try {
-    // 5 primeres pel·lícules + actors
-    const movies = await pool.query(`
+
+    const moviesRows = await db.query(`
       SELECT 
         f.film_id,
         f.title,
@@ -74,29 +68,45 @@ app.get('/', async (req, res) => {
       LIMIT 5
     `);
 
-    // 5 primeres categories
-    const categories = await pool.query(`
-      SELECT name
+    const categoriesRows = await db.query(`
+      SELECT category_id, name
       FROM category
       ORDER BY category_id
       LIMIT 5
     `);
 
-    res.render('index', {
-      ...common,
-      movies: movies[0],
-      categories: categories[0]
+    const movies = db.table_to_json(moviesRows, {
+      film_id: 'number',
+      title: 'string',
+      release_year: 'number',
+      actors: 'string'
     });
+
+    const categories = db.table_to_json(categoriesRows, {
+      category_id: 'number',
+      name: 'string'
+    });
+
+    const data = {
+      ...common,
+      movies,
+      categories
+    };
+
+    res.render('index', data);
 
   } catch (err) {
     console.error(err);
-    res.send('Error base de dades');
+    res.status(500).send('Error consultant la base de dades');
   }
 });
 
+// ruta movies
+
 app.get('/movies', async (req, res) => {
   try {
-    const [films] = await pool.query(`
+
+    const filmsRows = await db.query(`
       SELECT 
         f.film_id,
         f.title,
@@ -112,6 +122,15 @@ app.get('/movies', async (req, res) => {
       LIMIT 15
     `);
 
+    const films = db.table_to_json(filmsRows, {
+      film_id: 'number',
+      title: 'string',
+      release_year: 'number',
+      rating: 'string',
+      description: 'string',
+      actors: 'string'
+    });
+
     res.render('movies', {
       ...common,
       films
@@ -119,31 +138,44 @@ app.get('/movies', async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.send('Error base de dades');
+    res.status(500).send('Error consultant la base de dades');
   }
 });
 
+// ruta customers
+
 app.get('/customers', async (req, res) => {
   try {
-    const [clients] = await pool.query(`
+
+    const clientsRows = await db.query(`
       SELECT customer_id, first_name, last_name, email
       FROM customer
       ORDER BY customer_id
       LIMIT 25
     `);
 
+    const clients = db.table_to_json(clientsRows, {
+      customer_id: 'number',
+      first_name: 'string',
+      last_name: 'string',
+      email: 'string'
+    });
+
     for (let client of clients) {
-      const [rentals] = await pool.query(`
+      const rentalsRows = await db.query(`
         SELECT f.title, r.rental_date
         FROM rental r
         JOIN inventory i ON r.inventory_id = i.inventory_id
         JOIN film f ON i.film_id = f.film_id
-        WHERE r.customer_id = ?
+        WHERE r.customer_id = ${client.customer_id}
         ORDER BY r.rental_date
         LIMIT 5
-      `, [client.customer_id]);
+      `);
 
-      client.rentals = rentals;
+      client.rentals = db.table_to_json(rentalsRows, {
+        title: 'string',
+        rental_date: 'datetime'
+      });
     }
 
     res.render('customers', {
@@ -153,11 +185,18 @@ app.get('/customers', async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.send('Error base de dades');
+    res.status(500).send('Error consultant la base de dades');
   }
 });
 
-// servidor
+//Servidor
 app.listen(PORT, () => {
   console.log(`Servidor actiu a http://localhost:${PORT}`);
+});
+
+// Tancar MySQL correctament al tancar el proces
+process.on('SIGINT', async () => {
+  console.log('\nTancant connexió MySQL...');
+  await db.end();
+  process.exit();
 });
