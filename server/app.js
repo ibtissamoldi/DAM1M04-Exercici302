@@ -1,16 +1,10 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../config.env' });
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 const express = require('express');
 const exphbs = require('express-handlebars');
 const MySQL = require('./utilsMySQL');
-
-// cargar proxmox config.env
-let proxmoxEnvPath = path.join(__dirname, '../proxmox/config.env');
-if (fs.existsSync(proxmoxEnvPath)) {
-  dotenv.config({ path: proxmoxEnvPath });
-}
 
 const app = express();
 const PORT = process.env.DEFAULT_SERVER_PORT || 3000;
