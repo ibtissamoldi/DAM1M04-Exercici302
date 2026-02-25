@@ -1,4 +1,3 @@
-require('dotenv').config({ path: '../config.env' });
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
@@ -19,13 +18,24 @@ const isProxmox = !!process.env.PM2_HOME;
 
 // Connexió MySQL
 const db = new MySQL();
-db.init({
-  host: process.env.DB_HOST || '127.0.0.1',
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || 'root',
-  database: process.env.DB_NAME || 'sakila'
-});
+
+if (!isProxmox) {
+  db.init({
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'root',
+    password: 'root',
+    database: 'sakila'
+  });
+} else {
+  db.init({
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'super',
+    password: '1234',
+    database: 'sakila'
+  });
+}
 
 // Handlebars
 app.engine('hbs', exphbs.engine({
